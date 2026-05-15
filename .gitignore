@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# production build
+build/
+
+# uploads
+uploads/
+
+# environment files
+.env
+
+# vscode
+.vscode/
+
+# python cache
+__pycache__/
+
+# logs
+*.log
+
+# PDFs generated
+*.pdf
+
+# database
+*.db
