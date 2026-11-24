@@ -425,6 +425,45 @@ export default function Laundry() {
       return;
     }
 
+    if (window.Razorpay) {
+      try {
+        setWalletLoading(true);
+        const data = await createWalletTopupPayment(amount);
+        const userObj = getUser() || {};
+        const options = {
+          key: "rzp_test_1DP5mmOlF5G5ag",
+          amount: amount * 100,
+          currency: "INR",
+          name: "HOSTELEASE Smart Laundry",
+          description: `Wallet Top-Up - ₹${amount}`,
+          image: "https://cdn-icons-png.flaticon.com/512/3063/3063823.png",
+          handler: async function (response) {
+            toast.success(`Payment verified via Razorpay! ID: ${response.razorpay_payment_id}`);
+            await verifyPendingPayment(data.reference_id, async () => {
+              setTopupAmount('');
+              toast.success(`₹${amount} credited to Laundry Wallet!`);
+            });
+          },
+          prefill: {
+            name: userObj.student_name || userObj.username || "Student",
+            email: userObj.college_email || userObj.email || "student@hostel.com",
+            contact: userObj.phone || "9999999999"
+          },
+          theme: {
+            color: "#5B7FED"
+          }
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        setWalletLoading(false);
+        return;
+      } catch (err) {
+        console.error("Razorpay topup init error, falling back to scanner:", err);
+      } finally {
+        setWalletLoading(false);
+      }
+    }
+
     try {
       setWalletLoading(true);
       setPaymentReceiptUrl('');

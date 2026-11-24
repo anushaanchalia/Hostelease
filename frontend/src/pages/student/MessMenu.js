@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/card';
 import api from '../../utils/api';
-import { Utensils, Calendar, Clock, Star, Share2 } from 'lucide-react';
+import { Utensils, Calendar, Clock, Star, Share2, Download, Printer } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { toast } from 'sonner';
 
 export default function MessMenu() {
   const [menu, setMenu] = useState([]);
@@ -33,6 +34,78 @@ export default function MessMenu() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadMenuPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Pop-up blocked. Please allow pop-ups to download PDF.');
+      return;
+    }
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>HOSTELEASE - Weekly Mess Menu</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; color: #1e293b; }
+          .header { text-align: center; border-bottom: 2px solid #5B7FED; padding-bottom: 16px; margin-bottom: 24px; }
+          .title { font-size: 26px; font-weight: bold; color: #1e293b; margin: 0; }
+          .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+          .day-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; page-break-inside: avoid; }
+          .day-title { font-size: 18px; font-weight: bold; color: #5B7FED; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+          .meals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+          .meal-block { background: #f8fafc; padding: 10px; border-radius: 8px; }
+          .meal-type { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #475569; margin-bottom: 6px; }
+          .meal-items { font-size: 13px; line-height: 1.5; color: #334155; }
+          .badge { display: inline-block; background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; margin-left: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">HOSTELEASE HOSTEL MANAGEMENT</h1>
+          <p class="subtitle">Official Weekly Mess Dining Schedule & Menu</p>
+        </div>
+        ${menu.map(d => `
+          <div class="day-card">
+            <div class="day-title">${d.day} ${d.day === 'Sunday' ? '<span class="badge">★ Student Choice</span>' : ''}</div>
+            <div class="meals">
+              <div class="meal-block">
+                <div class="meal-type">🌅 Breakfast</div>
+                <div class="meal-items">${Array.isArray(d.breakfast) ? d.breakfast.join(', ') : (d.breakfast || '-')}</div>
+              </div>
+              <div class="meal-block">
+                <div class="meal-type">☀️ Lunch</div>
+                <div class="meal-items">${Array.isArray(d.lunch) ? d.lunch.join(', ') : (d.lunch || '-')}</div>
+              </div>
+              <div class="meal-block">
+                <div class="meal-type">🌙 Dinner</div>
+                <div class="meal-items">${Array.isArray(d.dinner) ? d.dinner.join(', ') : (d.dinner || '-')}</div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
+  const shareFullMenu = () => {
+    let msg = `🍽️ *HOSTELEASE - WEEKLY MESS MENU* 🍽️%0A%0A`;
+    menu.forEach(d => {
+      const b = Array.isArray(d.breakfast) ? d.breakfast.join(', ') : d.breakfast;
+      const l = Array.isArray(d.lunch) ? d.lunch.join(', ') : d.lunch;
+      const dn = Array.isArray(d.dinner) ? d.dinner.join(', ') : d.dinner;
+      msg += `📌 *${d.day.toUpperCase()}*${d.day === 'Sunday' ? ' (★ Student Choice)' : ''}%0A`;
+      msg += `• Breakfast: ${b}%0A• Lunch: ${l}%0A• Dinner: ${dn}%0A%0A`;
+    });
+    msg += `_View full real-time menu on Hostelease Student Portal_`;
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
   };
 
   // NEW: LOGIC TO DETERMINE CURRENT MEAL
@@ -90,15 +163,36 @@ export default function MessMenu() {
         </Card>
       )}
 
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-[#5B7FED]/10 rounded-2xl">
-          <Utensils size={32} className="text-[#5B7FED]" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-[#5B7FED]/10 rounded-2xl">
+            <Utensils size={32} className="text-[#5B7FED]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              Weekly Mess Menu
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Check what's cooking this week & student choices</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Weekly Mess Menu
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">Check what's cooking this week</p>
+
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={downloadMenuPDF}
+            variant="outline"
+            className="flex items-center gap-2 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs"
+          >
+            <Download size={16} className="text-[#5B7FED]" />
+            Download Menu PDF
+          </Button>
+
+          <Button
+            onClick={shareFullMenu}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-100"
+          >
+            <Share2 size={16} />
+            Share Weekly Menu
+          </Button>
         </div>
       </div>
 

@@ -203,6 +203,11 @@ export default function Profile() {
             <Label className="text-sm text-slate-600">Gender</Label>
             <p className="text-lg font-medium text-slate-900 mt-1 capitalize">{user?.gender || 'N/A'}</p>
           </div>
+
+          <div>
+            <Label className="text-sm text-slate-600">Date of Birth (DOB)</Label>
+            <p className="text-lg font-medium text-slate-900 mt-1">{user?.dob || 'N/A'}</p>
+          </div>
         </div>
       </Card>
 
@@ -466,15 +471,54 @@ export default function Profile() {
         </h2>
 
         {!showPasswordChange ? (
-          <div>
-            <p className="text-slate-600 mb-4">Update your password to keep your account secure</p>
-            <Button
-              onClick={() => setShowPasswordChange(true)}
-              className="bg-[#5B7FED] hover:bg-[#4A6FD6] text-white"
-              data-testid="show-password-change-btn"
-            >
-              Update Credentials
-            </Button>
+          <div className="space-y-6">
+            <div>
+              <p className="text-slate-600 mb-4">Update your password to keep your account secure</p>
+              <Button
+                onClick={() => setShowPasswordChange(true)}
+                className="bg-[#5B7FED] hover:bg-[#4A6FD6] text-white"
+                data-testid="show-password-change-btn"
+              >
+                Update Credentials
+              </Button>
+            </div>
+            
+            <div className="pt-6 border-t border-slate-100">
+              <h3 className="text-lg font-medium text-slate-800 mb-2">Two-Step Verification (2FA)</h3>
+              <p className="text-slate-600 text-sm mb-4">
+                Add an extra layer of security to your account by enabling two-factor authentication.
+              </p>
+              
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const nextState = !user?.two_factor_enabled;
+                    try {
+                      const res = await api.post("/student/toggle-2fa", { enabled: nextState });
+                      const updatedUser = { ...profileUser, two_factor_enabled: nextState };
+                      setProfileUser(updatedUser);
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                      toast.success(nextState ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
+                    } catch (err) {
+                      toast.error(err.response?.data?.detail || "Failed to update 2FA");
+                    }
+                  }}
+                  className={`w-12 h-6 rounded-full transition-all relative ${
+                    user?.two_factor_enabled ? "bg-emerald-500" : "bg-slate-200"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-all ${
+                      user?.two_factor_enabled ? "translate-x-6" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                <span className="text-sm font-medium text-slate-700">
+                  {user?.two_factor_enabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
           </div>
         ) : (
           <form onSubmit={handlePasswordChange} className="space-y-4">

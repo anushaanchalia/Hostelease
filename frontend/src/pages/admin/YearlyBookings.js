@@ -22,19 +22,59 @@ import {
   BookOpen,
   Heart,
   MessageSquare,
-  Wand2
+  Wand2,
+  Shuffle
 } from 'lucide-react';
 
 export default function YearlyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState('');
+  const [suggestingId, setSuggestingId] = useState('');
+  const [autoAllocating, setAutoAllocating] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
     payment: 'all',
     search: ''
   });
   const [assignForms, setAssignForms] = useState({});
+
+  const handleAiSuggest = async (booking) => {
+    try {
+      setSuggestingId(booking._id);
+      const res = await api.post('/admin/yearly-bookings/ai-suggest', { booking_id: booking._id });
+      const { suggested_block, suggested_floor, suggested_room, suggested_bed, score, reason } = res.data;
+      setAssignForms((prev) => ({
+        ...prev,
+        [booking._id]: {
+          targetHostel: booking.hostel_name,
+          targetBlock: suggested_block || 'A',
+          targetFloor: suggested_floor || '1',
+          targetRoom: suggested_room || '101',
+          targetBed: suggested_bed || 'A'
+        }
+      }));
+      toast.success(`AI Recommended Room ${suggested_room} Bed ${suggested_bed} (${score}% match: ${reason})`);
+    } catch (e) {
+      toast.error('Failed to get AI room suggestion');
+    } finally {
+      setSuggestingId('');
+    }
+  };
+
+  const handleAutoAllocate = async (mode = 'smart') => {
+    if (!window.confirm(`Auto-allocate all pending next-year bookings using ${mode === 'smart' ? 'AI Smart Allocation' : 'Random Room Allocation'}?`)) return;
+    try {
+      setAutoAllocating(true);
+      const res = await api.post('/admin/yearly-bookings/auto-allocate', { mode });
+      toast.success(res.data.message || 'Students allocated successfully!');
+      fetchBookings();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Auto-allocation failed');
+    } finally {
+      setAutoAllocating(false);
+    }
+  };
 
   useEffect(() => {
     fetchBookings();
@@ -185,13 +225,34 @@ export default function YearlyBookings() {
           </div>
         </div>
 
-        <Button
-          onClick={handleResetCycle}
-          className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest"
-        >
-          <RefreshCcw size={14} className="mr-2" />
-          Reset New Year Cycle
-        </Button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            onClick={() => handleAutoAllocate('smart')}
+            disabled={autoAllocating}
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center"
+          >
+            <Sparkles size={14} className="mr-2" />
+            {autoAllocating ? 'Allocating...' : 'AI Smart Allocate'}
+          </Button>
+
+          <Button
+            onClick={() => handleAutoAllocate('random')}
+            disabled={autoAllocating}
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl font-black text-xs uppercase tracking-widest flex items-center"
+          >
+            <Shuffle size={14} className="mr-2" />
+            Random Allocate
+          </Button>
+
+          <Button
+            onClick={handleResetCycle}
+            className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest"
+          >
+            <RefreshCcw size={14} className="mr-2" />
+            Reset Cycle
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -437,9 +498,21 @@ export default function YearlyBookings() {
                   )}
 
                   <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Bed size={15} className="text-blue-600" />
-                      <p className="text-xs font-black uppercase tracking-widest text-blue-600">Admin Room Assignment</p>
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Bed size={15} className="text-blue-600" />
+                        <p className="text-xs font-black uppercase tracking-widest text-blue-600">Admin Room Assignment</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleAiSuggest(booking)}
+                        disabled={suggestingId === booking._id}
+                        className="bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-[10px] font-black uppercase tracking-wider h-7 px-2.5 flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Wand2 size={12} className={suggestingId === booking._id ? 'animate-spin' : ''} />
+                        {suggestingId === booking._id ? 'Analyzing...' : 'AI Suggest Room'}
+                      </Button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

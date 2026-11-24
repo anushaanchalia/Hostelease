@@ -127,10 +127,18 @@ export default function FoodVoting() {
       setManualVotingStartedBy(payload.manual_voting_started_by || '');
       setRemainingSeconds(Number(payload.remaining_seconds || 0));
 
-      if (payload.voting_window_start && payload.voting_window_end) {
+      if (payload.remaining_seconds > 0) {
+        const computedEnd = new Date(Date.now() + Number(payload.remaining_seconds) * 1000).toISOString();
+        localStorage.setItem('foodVotingEndTime', computedEnd);
+        if (payload.voting_window_start) {
+          const start = new Date(payload.voting_window_start);
+          setWindowLabel(`${start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} Live Window`);
+        }
+        updateCountdown();
+      } else if (payload.voting_window_start && payload.voting_window_end) {
         const start = new Date(payload.voting_window_start);
         const end = new Date(payload.voting_window_end);
-        setWindowLabel(`${start.toLocaleString()} - ${end.toLocaleTimeString()}`);
+        setWindowLabel(`${start.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })} - ${end.toLocaleTimeString([], { timeStyle: 'short' })}`);
         localStorage.setItem('foodVotingEndTime', payload.voting_window_end);
         updateCountdown();
       }
