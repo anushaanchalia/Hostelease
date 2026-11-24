@@ -1,7 +1,7 @@
 # 🏨 HOSTELEASE - Advanced AI-Powered Hostel Management System
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Frontend-React%2018%20%7C%20TailwindCSS-61DAFB.svg?style=flat&logo=react)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI%2C%20Python%203.11-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/Frontend-React%2018%2C%20TailwindCSS-61DAFB.svg?style=flat&logo=react)](https://reactjs.org/)
 [![MongoDB Atlas](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248.svg?style=flat&logo=mongodb)](https://www.mongodb.com/)
 [![Razorpay](https://img.shields.io/badge/Payments-Razorpay%20Checkout-02042B.svg?style=flat&logo=razorpay)](https://razorpay.com/)
 [![Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini%202.5-4285F4.svg?style=flat&logo=google)](https://ai.google.dev/)
