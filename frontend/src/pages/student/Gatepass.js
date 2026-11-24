@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import api from '../../utils/api';
 import { toast } from 'sonner';
+import QRCode from 'react-qr-code';
 import {
   FileText,
   Upload,
@@ -481,7 +482,13 @@ export default function Gatepass() {
                     <p className="text-lg font-bold text-slate-900">{pass.reason}</p>
                   </div>
 
-                  <div className="flex flex-col items-start lg:items-end gap-2">
+                  <div className="flex flex-col items-center lg:items-end gap-2">
+                    {pass.status === 'approved' && (
+                      <div className="bg-white p-2 border border-slate-200 rounded-lg shadow-sm">
+                        <QRCode value={`GATEPASS:${pass._id}`} size={64} />
+                        <p className="text-[8px] text-center font-bold text-slate-400 mt-1 uppercase tracking-widest">Scan at Gate</p>
+                      </div>
+                    )}
                     {pass.status === 'approved' && pass.pdf_url && (
                       <Button
                         size="sm"

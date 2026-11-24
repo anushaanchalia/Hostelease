@@ -4,7 +4,7 @@ import { clearAuth, getUser } from '../utils/auth';
 import { 
   LayoutDashboard, Users, Map, Search, User as UserIcon,
   Utensils, MessageSquare, BarChart3, AlertTriangle, 
-  FileText, Calendar, LogOut, Bed, ShieldCheck, ShieldAlert , Bell, BookMarked
+  FileText, Calendar, LogOut, Bed, ShieldCheck, ShieldAlert , Bell, BookMarked, Clock
 } from 'lucide-react';
 import { Card } from '../components/ui/card'; // Ensure Card is imported
 
@@ -30,6 +30,12 @@ export default function AdminDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = getUser();
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // LOGIC: Mandatory Password Change Check
   const needsPasswordChange = user?.is_default_password;
@@ -136,10 +142,22 @@ export default function AdminDashboard() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* Live Time Widget */}
+            <div className="hidden sm:flex items-center gap-2.5 bg-slate-50 border border-slate-200/70 px-3.5 py-1.5 rounded-xl shadow-xs">
+              <Clock className="text-[#5B7FED]" size={16} />
+              <div className="text-left font-mono">
+                <span className="text-xs font-bold text-slate-800 tracking-wider">
+                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </span>
+                <span className="text-[10px] font-semibold text-slate-400 ml-2">
+                  {currentTime.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+
             <div className="text-right mr-2 hidden md:block">
                <p className="text-xs font-black text-slate-900 uppercase">Administrator</p>
-               {/* <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{user?.email || 'admin@hostelease.com'}</p> */}
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{user?.college_email || user?.username || 'Administrator'}</p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-[#5B7FED] flex items-center justify-center text-white font-black shadow-lg shadow-blue-100 border-2 border-white">

@@ -67,7 +67,20 @@ export default function BedAvailability() {
   const [beds, setBeds] = useState([]);
   const [filteredBeds, setFilteredBeds] = useState([]);
   const [bookingHistory, setBookingHistory] = useState([]);
-  const [genderFilter, setGenderFilter] = useState('all');
+  const localUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+  const studentGender = useMemo(() => {
+    const g = String(localUser?.gender || '').toLowerCase();
+    if (!g) return 'all';
+    return g.includes('f') || g.includes('girl') ? 'female' : 'male';
+  }, [localUser]);
+
+  const [genderFilter, setGenderFilter] = useState(studentGender !== 'all' ? studentGender : 'all');
   const [blockFilter, setBlockFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [hideFull, setHideFull] = useState(false);
@@ -250,14 +263,14 @@ export default function BedAvailability() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select value={genderFilter} onValueChange={setGenderFilter}>
+              <Select value={genderFilter} onValueChange={setGenderFilter} disabled={studentGender !== 'all'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Genders</SelectItem>
-                  <SelectItem value="male">Boys Hostel</SelectItem>
-                  <SelectItem value="female">Girls Hostel</SelectItem>
+                  {studentGender === 'all' && <SelectItem value="all">All Genders</SelectItem>}
+                  {(studentGender === 'all' || studentGender === 'male') && <SelectItem value="male">Boys Hostel (Assigned for Boys)</SelectItem>}
+                  {(studentGender === 'all' || studentGender === 'female') && <SelectItem value="female">Girls Hostel (Assigned for Girls)</SelectItem>}
                 </SelectContent>
               </Select>
 

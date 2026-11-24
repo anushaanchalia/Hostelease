@@ -168,12 +168,20 @@ async def seed_from_master():
         username_base = "".join(student_name.lower().split())
         username = f"{username_base}{enrollment[-3:]}" if len(enrollment) >= 3 else username_base
 
+        # Default password is DOB (generate random if not in excel)
+        dob = to_str(row.get("DOB"))
+        if not dob:
+            import random
+            dob = f"{random.randint(1,28):02d}-{random.randint(1,12):02d}-{random.randint(2000, 2005)}"
+        student_password_hash = pwd_context.hash(dob)
+
         students_to_insert.append({
             "username": username,
             "college_email": f"{enrollment}@hostel.com",
             "personal_email": email or f"{username}@gmail.com",
             "enrollment_number": enrollment,
-            "password": default_password_hash,
+            "password": student_password_hash,
+            "dob": dob,
             "role": "student",
             "student_name": student_name,
             "phone": f"+91{student_phone}" if student_phone and not str(student_phone).startswith("+91") else student_phone,

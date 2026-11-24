@@ -349,10 +349,18 @@ export default function VisitorManagement() {
   const openWebcamCapture = async () => {
     try {
       setCameraOpen(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      } catch (err) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
       webcamStreamRef.current = stream;
 
       setTimeout(() => {
@@ -363,7 +371,7 @@ export default function VisitorManagement() {
       }, 100);
     } catch (error) {
       setCameraOpen(false);
-      toast.error("Unable to access camera");
+      toast.error("Unable to access camera. Please allow camera permissions or upload a photo.");
     }
   };
 
@@ -464,27 +472,27 @@ export default function VisitorManagement() {
   const handleResidentLookup = async (name) => {
     setFormData((prev) => ({ ...prev, whomToVisit: name }));
 
-    if (name.trim().length <= 3) {
+    if (name.trim().length < 2) {
       setMatchedStudent(null);
       setIsParent(false);
-      setFormData((prev) => ({
-        ...prev,
-        studentEnrollment: "",
-        hostel_name: "",
-        room_number: "",
-        bed_number: "",
-      }));
       return;
     }
 
     try {
       const res = await api.get(
-        `/admin/students/search?name=${encodeURIComponent(name.trim())}`,
+        `/admin/students/search?q=${encodeURIComponent(name.trim())}`
       );
 
       if (res.data) {
         const student = res.data;
         setMatchedStudent(student);
+        setFormData((prev) => ({
+          ...prev,
+          studentEnrollment: student.enrollment_number || prev.studentEnrollment,
+          hostel_name: student.hostel_name || prev.hostel_name,
+          room_number: student.room_number || prev.room_number,
+          bed_number: student.bed_number || prev.bed_number,
+        }));
 
         const matchedParent = applyParentVerification(
           student,
@@ -501,7 +509,43 @@ export default function VisitorManagement() {
     } catch (err) {
       setMatchedStudent(null);
       setIsParent(false);
-      console.log("No matching resident found");
+    }
+  };
+
+  const handleEnrollmentLookup = async (enrollment) => {
+    setFormData((prev) => ({ ...prev, studentEnrollment: enrollment }));
+
+    if (enrollment.trim().length < 2) {
+      return;
+    }
+
+    try {
+      const res = await api.get(
+        `/admin/students/search?q=${encodeURIComponent(enrollment.trim())}`
+      );
+
+      if (res.data) {
+        const student = res.data;
+        setMatchedStudent(student);
+        setFormData((prev) => ({
+          ...prev,
+          whomToVisit: student.student_name || prev.whomToVisit,
+          hostel_name: student.hostel_name || prev.hostel_name,
+          room_number: student.room_number || prev.room_number,
+          bed_number: student.bed_number || prev.bed_number,
+        }));
+
+        const matchedParent = applyParentVerification(
+          student,
+          formData.visitorName,
+        );
+
+        if (!matchedParent && student.availability_warning) {
+          toast.warning(student.availability_warning);
+        }
+      }
+    } catch (err) {
+      console.log("No resident found for enrollment");
     }
   };
 
@@ -980,10 +1024,11 @@ export default function VisitorManagement() {
                 size={16}
               />
               <input
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-600 outline-none"
-                placeholder="Resident Enrollment ID"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100"
+                placeholder="Resident Enrollment ID / Reg No"
                 value={formData.studentEnrollment}
-                readOnly
+                onChange={(e) => handleEnrollmentLookup(e.target.value)}
+                required
               />
             </div>
 

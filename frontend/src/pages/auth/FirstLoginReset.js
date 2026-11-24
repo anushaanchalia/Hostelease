@@ -28,6 +28,8 @@ const FirstLoginReset = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [testingOtp, setTestingOtp] = useState('');
+  const [liveEmailDelivered, setLiveEmailDelivered] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,7 +48,7 @@ const FirstLoginReset = () => {
     if (location.state?.user) {
       const user = location.state.user;
       setEnrollment(user.enrollment_number || '');
-      setEmail(user.email || user.college_email || '');
+      setEmail(user.email || user.personal_email || user.college_email || '');
 
       if (user.role === 'admin') {
         setSetupOnly2FA(true);
@@ -79,6 +81,7 @@ const FirstLoginReset = () => {
     try {
       setGlobalError('');
       setTestingOtp('');
+      setIsSendingOtp(true);
 
       const res = await fetch(`${API_URL}/auth/first-login/send-otp`, {
         method: 'POST',
@@ -90,10 +93,14 @@ const FirstLoginReset = () => {
       if (!res.ok) throw new Error(data?.detail || 'Failed to send OTP');
 
       setOtpSent(true);
+      const isDelivered = Boolean(data?.live_email_delivered);
+      setLiveEmailDelivered(isDelivered);
       setTestingOtp(data?.dev_otp || '');
       setEmail(data?.email || email);
     } catch (err) {
       setGlobalError(err.message || 'Failed to send OTP');
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -248,23 +255,34 @@ const FirstLoginReset = () => {
               {!otpSent ? (
                 <div className="text-center">
                   <p className="text-gray-300 text-sm mb-6">
-                    We need to verify your registered college email address ({email}) before
+                    We need to verify your registered email address ({email}) before
                     proceeding.
                   </p>
                   <button
                     onClick={handleSendOTP}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-teal-400 hover:bg-teal-500"
+                    disabled={isSendingOtp}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-teal-400 hover:bg-teal-500 disabled:opacity-50"
                   >
-                    Send Verification Code
+                    {isSendingOtp ? 'Sending Verification Code...' : 'Send Verification Code'}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {testingOtp && (
+                  {liveEmailDelivered ? (
+                    <div className="bg-emerald-950/40 border border-emerald-500 text-emerald-200 p-3.5 rounded-md text-sm space-y-1">
+                      <div className="flex items-center space-x-2 font-semibold text-emerald-300">
+                        <Mail className="w-4 h-4" />
+                        <span>Live Verification Code Dispatched to Gmail</span>
+                      </div>
+                      <p className="text-xs text-emerald-400 leading-relaxed">
+                        A live 6-digit verification code has been dispatched directly to your registered email address (<strong>{email}</strong>). Please check your Gmail inbox (and Spam/Junk folder). For security, testing OTP is hidden.
+                      </p>
+                    </div>
+                  ) : testingOtp ? (
                     <div className="bg-yellow-900/30 border border-yellow-500 text-yellow-200 p-3 rounded-md text-sm font-semibold">
                       Testing OTP: {testingOtp}
                     </div>
-                  )}
+                  ) : null}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300">

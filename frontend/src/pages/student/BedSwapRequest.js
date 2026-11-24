@@ -35,6 +35,24 @@ export default function BedSwapRequest() {
   const [targetStudentId, setTargetStudentId] = useState("");
   const [reason, setReason] = useState("");
   const [mutualConfirmed, setMutualConfirmed] = useState(true);
+  const [approvalFileName, setApprovalFileName] = useState("");
+  const [approvalFileBase64, setApprovalFileBase64] = useState("");
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be under 5MB");
+      return;
+    }
+    setApprovalFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setApprovalFileBase64(reader.result);
+      toast.success(`Approval proof "${file.name}" uploaded successfully!`);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     loadAll();
@@ -136,6 +154,8 @@ export default function BedSwapRequest() {
           request_type: "student_swap",
           target_student_id: targetStudentId.trim(),
           mutual_confirmed: mutualConfirmed,
+          approval_proof: approvalFileBase64,
+          approval_proof_name: approvalFileName,
           reason: reason.trim(),
         });
 
@@ -417,6 +437,23 @@ export default function BedSwapRequest() {
                 />
                 Both students have mutually agreed to the swap
               </label>
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold text-slate-700">Upload Mutual Agreement / Approval Proof (PDF / Document)</Label>
+              <div className="mt-1">
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  onChange={handleFileUpload}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#5B7FED] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl bg-white"
+                />
+              </div>
+              {approvalFileName && (
+                <p className="text-xs text-emerald-600 font-bold mt-1.5 flex items-center gap-1">
+                  ✓ Attached: {approvalFileName}
+                </p>
+              )}
             </div>
 
             <div>

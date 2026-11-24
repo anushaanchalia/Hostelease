@@ -18,7 +18,9 @@ import {
   Clock3,
   ShieldAlert,
   Home,
-  LayoutGrid
+  LayoutGrid,
+  FileText,
+  Eye
 } from 'lucide-react';
 
 export default function BedManagement() {
@@ -198,9 +200,9 @@ export default function BedManagement() {
                       </div>
 
                       {String(req.request_type || '').toLowerCase() === 'student_swap' ? (
-                        <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                          <div className="flex-1">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Requested With</p>
+                        <div className="flex flex-col gap-2.5 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Requested Swap Partner</p>
                             <p className="text-xs font-bold text-slate-700">
                               {req.target_student_name || 'Target Student'}
                               {req.target_student_id ? (
@@ -210,10 +212,51 @@ export default function BedManagement() {
                             <p className="text-[10px] font-black text-emerald-500 uppercase">
                               {req.target_hostel || '-'} • Block {req.target_block || '-'} • Floor {req.target_floor || '-'} • RM {req.target_room || '-'} • Bed {req.target_bed || '-'}
                             </p>
-                            <p className="text-[10px] text-slate-500 mt-1 font-medium">
-                              Mutual consent: {req.mutual_confirmed ? 'Yes' : 'Pending / Not confirmed'}
-                            </p>
                           </div>
+
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 size={12} className="text-emerald-600" />
+                              Mutual Consent: {req.mutual_confirmed ? 'Both Students Agreed' : 'Target Student Notified'}
+                            </span>
+                          </div>
+
+                          {req.approval_proof ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-center justify-between mt-1">
+                              <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                <FileText size={16} className="text-amber-600 shrink-0" />
+                                <div className="truncate">
+                                  <p className="text-xs font-bold text-amber-900 truncate">
+                                    {req.approval_proof_name || 'Mutual_Agreement_Proof.pdf'}
+                                  </p>
+                                  <p className="text-[10px] text-amber-700">Signed Consent Attached</p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  try {
+                                    const w = window.open();
+                                    if (w) {
+                                      w.document.write(`<iframe src="${req.approval_proof}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                    } else {
+                                      const a = document.createElement('a');
+                                      a.href = req.approval_proof;
+                                      a.download = req.approval_proof_name || 'Approval_Proof.pdf';
+                                      a.click();
+                                    }
+                                  } catch (e) {
+                                    toast.error('Unable to open PDF directly');
+                                  }
+                                }}
+                                className="text-[11px] font-bold bg-white text-amber-900 border-amber-300 hover:bg-amber-100 h-7 px-2.5 flex items-center gap-1 shrink-0"
+                              >
+                                <Eye size={12} /> View Proof
+                              </Button>
+                            </div>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">

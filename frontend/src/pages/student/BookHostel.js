@@ -231,6 +231,62 @@ export default function BookHostel() {
     setStep(5);
   };
 
+  const handleRazorpayHostelPayment = () => {
+    if (!window.Razorpay) {
+      toast.error('Razorpay SDK not loaded. You can still scan the QR code to pay.');
+      return;
+    }
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const options = {
+      key: "rzp_test_1DP5mmOlF5G5ag",
+      amount: Number(paymentAmount) * 100,
+      currency: "INR",
+      name: "HOSTELEASE Campus Living",
+      description: `Yearly Hostel Advance Booking - ₹${paymentAmount}`,
+      image: "https://cdn-icons-png.flaticon.com/512/3063/3063823.png",
+      handler: async function (response) {
+        toast.success(`Payment verified via Razorpay! ID: ${response.razorpay_payment_id}`);
+        setPaymentDetails({
+          paymentMethod: 'razorpay',
+          payerUpi: response.razorpay_payment_id,
+          transactionRef: response.razorpay_payment_id,
+          qrScanned: true
+        });
+        setLoading(true);
+        try {
+          const res = await api.post(`/bookings/submit-payment/${bookingRef}`, {
+            payment_method: 'razorpay',
+            payer_upi: response.razorpay_payment_id,
+            transaction_ref: response.razorpay_payment_id,
+            qr_scanned: true
+          });
+          toast.success('Payment verified successfully. Your booking is now blocked.');
+          setBookingStatus({
+            booking: res.data.booking,
+            payment: res.data.payment,
+            roommate_profile: res.data.roommate_profile
+          });
+          setStep(6);
+          fetchHostels();
+        } catch (err) {
+          toast.error(err.response?.data?.detail || 'Verification error');
+        } finally {
+          setLoading(false);
+        }
+      },
+      prefill: {
+        name: user.student_name || user.name || "Student",
+        email: user.college_email || user.email || "student@hostel.com",
+        contact: user.phone || "9999999999"
+      },
+      theme: {
+        color: "#5B7FED"
+      }
+    };
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
+
   const handlePaymentConfirm = async () => {
     if (!paymentDetails.paymentMethod) return toast.error('Select a payment method');
     if (!paymentDetails.qrScanned) return toast.error('Please scan the QR and confirm before continuing');
@@ -240,6 +296,8 @@ export default function BookHostel() {
     }
 
     setLoading(true);
+    // Simulate real payment processing delay
+    await new Promise(resolve => setTimeout(resolve, 2500));
     try {
       const res = await api.post(`/bookings/submit-payment/${bookingRef}`, {
         payment_method: paymentDetails.paymentMethod,
@@ -263,7 +321,12 @@ export default function BookHostel() {
     }
   };
 
-  const resetFlow = () => {
+  const resetFlow = async () => {
+    try {
+      await api.delete('/bookings/draft');
+    } catch (e) {
+      console.log('No draft booking to delete or error deleting', e);
+    }
     setStep(1);
     setSelectedHostel(null);
     setPreferences(defaultPreferences);
@@ -286,6 +349,13 @@ export default function BookHostel() {
 
   return (
     <div className="space-y-6 fade-in" data-testid="book-hostel-page">
+      <div className="flex justify-end mb-2">
+        {step > 1 && step < 6 && (
+          <Button onClick={resetFlow} variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 shadow-sm font-semibold">
+            Start Over
+          </Button>
+        )}
+      </div>
       <div className="flex items-start justify-center gap-2 mb-8 hidden md:flex">
         {[
           { num: 1, label: 'Choose Hostel', icon: Home },
@@ -803,8 +873,29 @@ export default function BookHostel() {
             <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
               <QrCode className="text-[#5B7FED]" size={34} />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Scan and Complete Payment</h2>
-            <p className="text-slate-500 text-sm mt-1">Enter payment details only after the QR is scanned and payment is completed.</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Complete Hostel Booking Payment</h2>
+            <p className="text-slate-500 text-sm mt-1">Use the real-time Razorpay checkout gateway or scan the UPI QR code below.</p>
+          </div>
+
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-[#5B7FED] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+            <div>
+              <p className="font-black text-lg flex items-center gap-2">
+                <span>⚡</span> Pay via Razorpay Live Gateway
+              </p>
+              <p className="text-xs text-blue-100 mt-0.5">Pay seamlessly with UPI (GPay, PhonePe, Paytm), Cards, or Net Banking</p>
+            </div>
+            <Button
+              onClick={handleRazorpayHostelPayment}
+              disabled={loading}
+              className="bg-white text-[#5B7FED] hover:bg-slate-100 font-black px-6 py-2.5 rounded-xl shadow-md shrink-0 active:scale-95 transition-all"
+            >
+              Pay ₹{paymentAmount} with Razorpay
+            </Button>
+          </div>
+
+          <div className="relative my-6 text-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+            <span className="relative bg-white px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Or Pay Manually via UPI QR</span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

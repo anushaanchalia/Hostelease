@@ -181,7 +181,7 @@ export default function Login() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
+                placeholder={role === "student" ? "Enter your password (Default is DOB: DD-MM-YYYY)" : "Enter admin password (Default: Hostel@123)"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 pr-10 border-slate-200 focus:border-[#5B7FED] focus:ring-[#5B7FED]"
@@ -195,6 +195,11 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <p className="text-xs text-slate-500 mt-2">
+              {role === "student"
+                ? "* Note: Default password is your Date of Birth in DD-MM-YYYY format."
+                : "* Note: Default password for Warden / Admin is Hostel@123"}
+            </p>
           </div>
 
           <Button

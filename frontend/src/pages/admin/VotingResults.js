@@ -96,10 +96,18 @@ export default function VotingResults() {
       setManualVotingStartedBy(payload.manual_voting_started_by || '');
       setRemainingSeconds(Number(payload.remaining_seconds || 0));
 
-      if (payload.voting_window_start && payload.voting_window_end) {
+      if (payload.remaining_seconds > 0) {
+        const computedEnd = new Date(Date.now() + Number(payload.remaining_seconds) * 1000).toISOString();
+        localStorage.setItem('adminFoodVotingEndTime', computedEnd);
+        if (payload.voting_window_start) {
+          const start = new Date(payload.voting_window_start);
+          setWindowLabel(`${start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} Live Window`);
+        }
+        updateCountdown();
+      } else if (payload.voting_window_start && payload.voting_window_end) {
         const start = new Date(payload.voting_window_start);
         const end = new Date(payload.voting_window_end);
-        setWindowLabel(`${start.toLocaleString()} - ${end.toLocaleTimeString()}`);
+        setWindowLabel(`${start.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })} - ${end.toLocaleTimeString([], { timeStyle: 'short' })}`);
         localStorage.setItem('adminFoodVotingEndTime', payload.voting_window_end);
         updateCountdown();
       }
@@ -151,16 +159,66 @@ export default function VotingResults() {
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            loadResults();
-            loadVotingRuntime();
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={async () => {
+              try {
+                await api.post("/voting/start-now", { note: "Manual voting start by admin", duration_minutes: 120 });
+                loadVotingRuntime();
+                loadResults();
+                alert("Voting started manually.");
+              } catch(e) {
+                alert("Failed to start voting.");
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 border border-emerald-700 text-white font-bold hover:bg-emerald-700"
+          >
+            Start Voting
+          </button>
+          
+          <button
+            onClick={async () => {
+              try {
+                await api.post("/voting/stop-now", {});
+                loadVotingRuntime();
+                loadResults();
+                alert("Voting stopped manually.");
+              } catch(e) {
+                alert("Failed to stop voting.");
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 border border-red-700 text-white font-bold hover:bg-red-700"
+          >
+            End Voting
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                await api.post("/voting/freeze-now", {});
+                loadVotingRuntime();
+                loadResults();
+                alert("AI processing complete. Winner applied to Mess Menu.");
+              } catch(e) {
+                alert("Failed to process winner.");
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 border border-purple-700 text-white font-bold hover:bg-purple-700"
+          >
+            Process AI Winner
+          </button>
+
+          <button
+            onClick={() => {
+              loadResults();
+              loadVotingRuntime();
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {manualVotingEnabled && (

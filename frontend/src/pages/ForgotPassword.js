@@ -29,6 +29,8 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [devOtp, setDevOtp] = useState('');
+  const [liveEmailDelivered, setLiveEmailDelivered] = useState(false);
+  const [sentToEmail, setSentToEmail] = useState('');
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -67,6 +69,8 @@ export default function ForgotPassword() {
     setNewPassword('');
     setConfirmPassword('');
     setDevOtp('');
+    setLiveEmailDelivered(false);
+    setSentToEmail('');
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setLoading(false);
@@ -79,13 +83,20 @@ export default function ForgotPassword() {
     try {
       const payload = {
         contact: contact.trim(),
-        type: otpMethod === 'sms' ? 'phone' : 'email'
+        type: 'email'
       };
 
       const response = await api.post('/auth/send-otp', payload);
+      const isLiveDelivered = Boolean(response?.data?.live_email_delivered);
+      setLiveEmailDelivered(isLiveDelivered);
+      setSentToEmail(response?.data?.sent_to || contact.trim());
       setDevOtp(response?.data?.dev_otp || '');
 
-      toast.success(`OTP sent to your ${otpMethod}`);
+      toast.success(
+        isLiveDelivered
+          ? 'Live verification code dispatched to your Gmail inbox!'
+          : (response?.data?.message || 'OTP sent to your registered email')
+      );
       setStep(2);
     } catch (error) {
       toast.error(error?.response?.data?.detail || 'Failed to send OTP');
@@ -115,7 +126,7 @@ export default function ForgotPassword() {
         contact: contact.trim(),
         otp: otp.trim(),
         new_password: newPassword,
-        type: otpMethod === 'sms' ? 'phone' : 'email'
+        type: 'email'
       });
 
       toast.success('Password reset successful');
@@ -223,7 +234,7 @@ export default function ForgotPassword() {
             }`}
           >
             <Mail size={16} />
-            OTP
+            Email OTP
           </button>
 
           <button
@@ -247,45 +258,16 @@ export default function ForgotPassword() {
           <>
             {step === 1 ? (
               <form onSubmit={handleSendOTP} className="space-y-4">
-                <div className="flex gap-2 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setOtpMethod('email')}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                      otpMethod === 'email'
-                        ? 'bg-[#5B7FED] text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    Email
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOtpMethod('sms')}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                      otpMethod === 'sms'
-                        ? 'bg-[#5B7FED] text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    SMS
-                  </button>
-                </div>
-
                 <div>
                   <Label htmlFor="contact" className="text-slate-700 text-sm font-medium">
-                    {otpMethod === 'email' ? 'College Email' : 'Phone Number'}
+                    Registered Email or Enrollment ID
                   </Label>
                   <div className="relative mt-1">
-                    {otpMethod === 'email' ? (
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    ) : (
-                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    )}
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <Input
                       id="contact"
-                      type={otpMethod === 'email' ? 'email' : 'tel'}
-                      placeholder={otpMethod === 'email' ? 'your.email@hostel.com' : '+91XXXXXXXXXX'}
+                      type="text"
+                      placeholder="e.g. 2022034622484 or student@hostel.com"
                       value={contact}
                       onChange={(e) => setContact(e.target.value)}
                       className="pl-10 border-slate-200 focus:border-[#5B7FED] focus:ring-[#5B7FED]"
@@ -304,11 +286,21 @@ export default function ForgotPassword() {
               </form>
             ) : (
               <form onSubmit={handleResetWithOTP} className="space-y-4">
-                {devOtp && (
+                {liveEmailDelivered ? (
+                  <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3.5 text-sm text-emerald-800 space-y-1">
+                    <div className="flex items-center space-x-2 font-semibold text-emerald-900">
+                      <Mail className="h-4 w-4" />
+                      <span>Live OTP Dispatched to Gmail</span>
+                    </div>
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      A live 6-digit verification code has been dispatched directly to your registered Gmail address: <strong>{sentToEmail}</strong>. Please check your Gmail inbox (and Spam/Junk folder). For security, testing OTP is hidden.
+                    </p>
+                  </div>
+                ) : devOtp ? (
                   <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 font-semibold">
                     Testing OTP: {devOtp}
                   </div>
-                )}
+                ) : null}
 
                 <div>
                   <Label htmlFor="otp" className="text-slate-700 text-sm font-medium">

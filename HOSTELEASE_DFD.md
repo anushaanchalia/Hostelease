@@ -47,7 +47,7 @@
 │  │             │                                │              │     │
 │  │ • users     │                                │ • Twilio     │     │
 │  │ • bookings  │                                │ • Resend     │     │
-│  │ • mess_menu │                                │ • OpenAI     │     │
+│  │ • mess_menu │                                │ • Gemini AI  │
 │  │ • complaints│                                │ • Razorpay   │     │
 │  │ • payments  │                                │              │     │
 │  │ • attendance│                                └──────────────┘     │
@@ -111,7 +111,7 @@
 │           │   • View Weekly Menu                         │                    │
 │           │   • Submit Food Feedback                     │                    │
 │           │   • Vote for Food Items                      │                    │
-│           │   • AI Feedback Analysis (OpenAI)            │                    │
+│           │   • AI Feedback Analysis (Gemini)            │                    │
 │           │   • Menu Management (Admin)                  │                    │
 │           └──────────────┬───────────────────────────────┘                    │
 │                          │                                                    │
@@ -507,7 +507,7 @@
 │         ▼                                                                 │
 │  ┌─────────────────────────┐                                             │
 │  │ 4.6 Send to             │                                             │
-│  │ OpenAI GPT-4o           │───► OpenAI API                              │
+│  │ Google Gemini 2.5       │───► Gemini API                              │
 │  │ for Analysis            │                                             │
 │  │ • Extract top items     │                                             │
 │  │ • Identify patterns     │                                             │
@@ -593,7 +593,7 @@
 **Data Flows:**
 - Menu data → MongoDB (mess_menu)
 - Feedback → MongoDB (food_feedback)
-- Suggestions → OpenAI API
+- Suggestions → Google Gemini AI API
 - AI analysis → Voting items
 - Vote → Update vote count
 - Results ← Aggregate votes
@@ -2031,32 +2031,153 @@ Student Submits Explanation
 
 ---
 
-## 🎯 CONCLUSION
+### **6. Real Gmail SMTP OTP Password Reset Workflow**
+```
+Student Enters Enrollment/Email → FastAPI Validates User in db.users → 
+Generate Secure 6-Digit OTP → Save in db.otps (10-min Expiry) → 
+smtplib Connects to smtp.gmail.com:587 (STARTTLS) → 
+Authenticate via GMAIL_APP_PASSWORD → Dispatch Formatted HTML Email → 
+Student Receives OTP in Gmail Inbox → Enters OTP & Strong New Password → 
+FastAPI Cross-Checks db.otps → Hash New Password with Bcrypt → 
+Update User Document (db.users) → Invalidate OTP Record → 
+Return Success & Redirect to Login
+```
 
-This DFD documentation provides a comprehensive view of the HOSTELEASE system's data flows across all modules:
+### **7. Mutual Bed Swap with Signed Consent Verification Workflow**
+```
+Student A Initiates Swap Request → Selects Desired Room/Bed & Student B → 
+Uploads Signed Mutual-Consent Proof (PDF) to /uploads/ → 
+System Stores Record in db.bed_swaps (Status: 'peer_pending') → 
+Real-Time Notification Sent to Student B → 
+Student B Reviews & Approves Swap in Student Portal → 
+Status Updates to 'admin_pending' → 
+Admin Bed Management Dashboard Displays Both Approvals & PDF Link → 
+Warden Verifies Both Consents & Clicks 'Approve Swap' → 
+System Performs Atomic Two-Way Swap in db.users:
+  - Updates Student A to Room B / Bed B
+  - Updates Student B to Room A / Bed A
+System Invalidates In-Memory Cache (_STUDENTS_CACHE & _BED_AVAILABILITY_CACHE) → 
+Both Students & Public Bed Availability Matrix Instantly Reflect New Allocations
+```
 
-**Key Characteristics:**
-- ✅ **Multi-tier Architecture**: React frontend, FastAPI backend, MongoDB database
-- ✅ **External Integrations**: OpenAI, Razorpay, Twilio, Resend
-- ✅ **Real-time Processing**: Scheduled jobs for automation
-- ✅ **Secure Authentication**: JWT + 2FA/TOTP + OTP
-- ✅ **File Management**: Image uploads with validation
-- ✅ **Role-based Access**: Separate workflows for Students and Admins
-- ✅ **Notification System**: Multi-channel (SMS, Email, In-app)
-- ✅ **Payment Integration**: Razorpay for hostel bookings and laundry
-- ✅ **AI-Powered Features**: OpenAI for feedback analysis
-- ✅ **Comprehensive Modules**: 12 major functional areas
+### **8. AI Food Sentiment Analysis & Automated Sunday Menu Injection Workflow**
+```
+Students Submit Meal Ratings & Feedback → Stored in db.mess_feedback → 
+Weekly Tuesday Scheduler / Admin Manual Override Triggered → 
+FastAPI Aggregates Feedbacks → Prompts Google Gemini 2.5 NLP Engine → 
+AI Identifies Positive Sentiments & Extracts Top 10 Repeated Student Favorites → 
+Candidate Items Populated in db.voting_candidates → 
+Live Food Voting Opens (Digital Countdown Active) → 
+Students Cast Daily Votes (Single Vote per Student Enforcement) → 
+Voting Deadline Reached (Wednesday 12:00 AM / Admin Manual End) → 
+System Tally Identifies Winner Dish → 
+Automated Script Injects Winner Dish into db.mess_menu:
+  - Updates Sunday Special Dinner Menu with Winner Item
+  - Logs AI Selection & Auto-Updates Both Student & Admin Mess Timetables → 
+Generates Weekly PDF Menu & Provides 1-Click WhatsApp Share Link
+```
 
-**Total API Endpoints**: 200+ RESTful APIs
-**Database Collections**: 26 MongoDB collections
-**External Services**: 4 (OpenAI, Razorpay, Twilio, Resend)
-**Scheduled Jobs**: 3 automated tasks
+### **9. Automated Attendance & Past-Date Auto-Absent Engine Workflow**
+```
+Warden / Student Requests Daily Attendance (/api/admin/attendance/daily-status) → 
+System Determines Target Date (Asia/Kolkata Timezone) → 
+If Target Date is in Past:
+  - Query db.users for All Active Residents (3,205 Students)
+  - Query db.attendance for Existing Marked Records on Target Date
+  - For Every Resident with No Existing Record:
+      * Construct Auto-Absent Document (status: 'absent', marked_by: 'system', source: 'auto_absent')
+  - Batch Insert Unmarked Students into db.attendance (ordered=False)
+System Computes Present/Late/Absent Metrics & Defaulter Risk Scores → 
+Calculates 30-Day Monthly Progress for Individual Student Profiles → 
+Renders Interactive Attendance Tables with Live Percentages
+```
 
-This system handles complete hostel management lifecycle from student admission to daily operations, with robust data flows ensuring reliability, security, and scalability.
+### **10. High-Performance Sub-Millisecond In-Memory Caching Workflow**
+```
+Client Makes GET Request (/admin/students, /admin/attendance, /bed-availability) → 
+FastAPI Constructs Composite Cache Key based on Filters & User Role → 
+Check Global In-Memory RAM Cache:
+  - [CACHE HIT & Age < TTL (45-60s)]: Return Cached JSON Response Immediately (< 1ms Latency)
+  - [CACHE MISS or Expired]:
+      * Query MongoDB Atlas using Lean Projections (exclude passwords, blobs, hashes)
+      * Serialize Normalized Records in Python
+      * Store Output in Global RAM Cache with Current Timestamp
+      * Return Response to Client (< 150ms)
+On Any Database Write Operation (POST/PATCH/DELETE /admin/students, Bookings, Swaps):
+  - Invalidate Targeted Caches Immediately (invalidate_students_cache(), invalidate_bed_cache())
+  - Guarantee 100% Data Freshness with Sub-Millisecond Read Speeds
+```
+
+### **11. Compulsory First-Time Login, Gmail OTP Dispatch & Conditional UI Workflow**
+```
+Student Enters Default Credentials (Enrollment ID + DOB: 'DD-MM-YYYY') → 
+FastAPI /auth/login Validates Password & Checks 'is_first_login' / 'is_default_password' Flag → 
+Flag is True → System Intercepts Session & Redirects to /first-login-reset → 
+Client Calls /auth/first-login/send-otp → 
+FastAPI Generates Secure 6-Digit Verification Code & Stores in db.otps → 
+Send Email Dispatch via Gmail SMTP (port 587) or Resend API:
+  - If Resend enforces free-tier restrictions on test student addresses:
+      * Smart Fallback catches domain error and routes code to verified tester inbox
+      * Prepends Student Account Banner & subject tag: '[{student_email}]'
+  - Return: live_email_delivered: true, dev_otp: null
+FirstLoginReset Frontend React Component Evaluates live_email_delivered:
+  - If True: Completely hides on-screen Testing OTP banner, renders emerald confirmation card
+  - If False (dummy account): Displays amber Testing OTP badge on screen for evaluation
+Student Inputs 6-Digit Code & Sets New Personal Password → 
+FastAPI /auth/first-login/verify Hashes Password (Bcrypt) & Updates db.users (is_first_login: false) → 
+Student Automatically Redirected to Main Dashboard
+```
+
+### **12. Book Hostel Mid-Way Reset ("Start Again") & Realistic Payment Processing Delay Workflow**
+```
+Student Navigates to Book Hostel Wizard (/student/book-hostel) → 
+Step 1: Select Bhawan & Room Category → Step 2: Choose Floor & Washroom Preferences → 
+Mid-Way Change of Mind:
+  - Student clicks "Start Again / Redo" button at any stage
+  - React State Resets: active step returns to 1, all selections cleared, room cache refreshed
+Step 3: Review Allocation & Payment Summary → 
+Student Clicks "Pay & Confirm Booking":
+  - System Simulates Realistic 2.5-Second Payment Gateway Processing Delay
+  - Animated banking spinner displays with status: "Contacting Secure Bank Server..."
+  - Razorpay order verification creates permanent booking in db.bookings
+  - Generates Downloadable Branded PDF Payment Receipt with Verification Stamp
+Instant Bed Availability Invalidation Updates Live Occupancy Across Campus
+```
+
+### **13. Warden Notice Board Asynchronous Gmail Broadcast Workflow**
+```
+Admin / Chief Warden Composes Notice (/api/notifications) with Title, Priority, Hostel Scope → 
+FastAPI Validates & Persists Notice Document in db.notifications → 
+System Instantly Returns HTTP 200 Success (< 30ms) to Warden UI → 
+FastAPI Background Task (asyncio.create_task) Triggers dispatch_notification_emails():
+  - Queries db.users for Registered Student Gmail Addresses matching Target Hostel
+  - Always Includes the 5 Designated Real Tester Student Accounts
+  - Generates High-Priority Branded HTML University Notice Template
+  - Dispatches Email via send_email (Gmail SMTP / Resend Fallback)
+Students Receive Instant Email Announcement with Priority Badge in their Gmail Inbox
+```
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: March 2025  
-**Created For**: HOSTELEASE Hostel Management System
+## 🎯 CONCLUSION
+
+This DFD documentation provides an exhaustive architectural and data flow blueprint for the **HOSTELEASE** hostel management ecosystem.
+
+**Key Technical Capabilities:**
+- ✅ **Multi-tier Full-Stack Architecture**: React 18, FastAPI Python 3.11, MongoDB Atlas
+- ✅ **External Cloud Integrations**: Google Gemini 2.5 AI, Razorpay, Gmail SMTP, Resend, Twilio
+- ✅ **Sub-Millisecond Read Performance**: Custom in-memory TTL RAM caching layer with automated write invalidation
+- ✅ **End-to-End Security**: JWT authentication, 2FA/TOTP authenticator, Bcrypt hashing, real Gmail SMTP OTP delivery
+- ✅ **File & Document Verification**: Multipart image/PDF validation with signed consent proof audits
+- ✅ **Automated Background Engines**: Past unmarked date auto-absent insertion, Wednesday voting deadlines with Admin manual override, Sunday menu injection
+
+**Total API Endpoints**: 65+ Production RESTful APIs  
+**Database Collections**: 18 Active MongoDB Collections  
+**Document Version**: 2.5.0 (Production Final Release)  
+**Last Updated**: October 2026  
+**Created For**: HOSTELEASE Hostel Management System Final Year Examination
+
+---
+
+**🎊 End of DFD Documentation 🎊**
 "

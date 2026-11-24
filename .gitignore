@@ -169,3 +169,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+#private files
+backend/hostelease.users.csv
+backend/python
+check_*.py
+do_fix.py

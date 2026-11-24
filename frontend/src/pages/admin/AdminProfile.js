@@ -61,6 +61,12 @@ export default function AdminProfile() {
 
   const [loginLogs, setLoginLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // --- ORIGINAL ACTION CENTER STATES ---
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -516,20 +522,36 @@ export default function AdminProfile() {
 
   return (
     <div className="space-y-8 fade-in pb-20 w-full max-w-[calc(100vw-310px)] ml-auto pr-8 text-left">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[#5B7FED] border border-blue-100 shadow-sm">
-          <ShieldCheck size={32} />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[#5B7FED] border border-blue-100 shadow-sm">
+            <ShieldCheck size={32} />
+          </div>
+          <div>
+            <h1
+              className="text-3xl font-black text-slate-900 tracking-tight"
+              style={{ fontFamily: "Manrope, sans-serif" }}
+            >
+              Admin Account Settings
+            </h1>
+            <p className="text-slate-500 text-sm font-medium mt-1">
+              Manage credentials, enterprise security, and automated security alerts.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1
-            className="text-3xl font-black text-slate-900 tracking-tight"
-            style={{ fontFamily: "Manrope, sans-serif" }}
-          >
-            Admin Account Settings
-          </h1>
-          <p className="text-slate-500 text-sm font-medium mt-1">
-            Manage credentials and automated security alerts.
-          </p>
+
+        {/* Live Clock Widget */}
+        <div className="hidden md:flex items-center gap-3 bg-white border border-slate-200/80 px-4 py-2.5 rounded-2xl shadow-sm">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
+          <Clock className="text-[#5B7FED]" size={18} />
+          <div className="text-right font-mono">
+            <p className="text-sm font-bold text-slate-800 tracking-wide">
+              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            </p>
+            <p className="text-[10px] font-semibold text-slate-400">
+              {currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
         </div>
       </div>
 
